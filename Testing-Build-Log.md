@@ -25,7 +25,7 @@ Ordered so the riskiest gaps (losing a user's work) get covered first, and so th
 | PR | Branch | Scope | Handoff items | Status |
 | --- | --- | --- | --- | --- |
 | 1 | `CM-1` | This log. Add a `COLLAGE_DATA_DIR` env var so the server can use a temp folder. Server tests on `node:test`. Fix any server bugs found. | Step 1, #13 | Merged ([#1](https://github.com/ktocdev/collage-maker/pull/1)) |
-| 2 | `CM-2` | Playwright added to `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | In progress |
+| 2 | `CM-2` | Playwright added to `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | In review ([#2](https://github.com/ktocdev/collage-maker/pull/2)) |
 | 3 | `CM-3` | Re-editing an art layer already on the canvas (`delta` compensation for rotated, scaled, flipped and trimmed layers, with and without keyframes). Canvas undo and redo. | #2, #3 | Not started |
 | 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | Not started |
 | 5 | `CM-5` | Library input paths (upload, drop files, drag to canvas, double-click). Layer panel. Properties panel. The rest of the editor. | #9, #10, #11, #12 | Not started |
@@ -73,7 +73,8 @@ Every PR also:
 - [x] Bugs found and fixed: B4, B5 (below)
 - [x] Suite passes 3 runs in a row: 35 server + 12 browser tests, about 4 s for the browser part
 - [x] ARCHITECTURE.md updated (test folders, `CM.app.ready`, Open validation)
-- [ ] PR opened
+- [x] A fresh clone passes with `npm ci && npm test`
+- [x] PR opened: [#2](https://github.com/ktocdev/collage-maker/pull/2)
 
 ## Bugs
 
