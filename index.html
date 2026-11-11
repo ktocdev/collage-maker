@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collage Maker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header id="topbar">
+  <h1>✂ Collage Maker</h1>
+  <div class="group" id="tools">
+    <button data-tool="select" title="Select / move (V)">➤ Select</button>
+    <button data-tool="shape" title="Shape tool (S)">■ Shape</button>
+    <button data-tool="line" title="Line tool (L)">✎ Line</button>
+  </div>
+  <div class="group">
+    <button id="undoBtn" title="Undo (Ctrl+Z)">↶</button>
+    <button id="redoBtn" title="Redo (Ctrl+Y)">↷</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="group">
+    <label>Canvas
+      <select id="sizeSel">
+        <option value="1280x720">1280 × 720 (wide)</option>
+        <option value="960x720">960 × 720 (4:3)</option>
+        <option value="1080x1080">1080 × 1080 (square)</option>
+        <option value="1080x1920">1080 × 1920 (tall)</option>
+      </select>
+    </label>
+  </div>
+  <div class="group">
+    <button id="openBtn" title="Open a saved project">Open</button>
+    <button id="saveBtn" title="Save project file">Save</button>
+    <button id="pngBtn" title="Export the current frame">PNG</button>
+    <button id="htmlBtn" title="Export the collage as an HTML + CSS page, one element per layer, ready for GSAP or CSS animation">HTML</button>
+    <button id="videoBtn" class="primary" title="Record the animation as a video">● Video</button>
+    <input type="file" id="openFile" accept=".json,.collage" hidden>
+  </div>
+</header>
+
+<div id="optsbar"></div>
+
+<main>
+  <aside id="libraryPanel" class="panel">
+    <div class="panel-head">
+      <h2>Art Library</h2>
+      <button id="uploadBtn" title="Add your own images">+ Add</button>
+      <input type="file" id="uploadFile" accept="image/*" multiple hidden>
+    </div>
+    <div id="libGrid" class="panel-body"></div>
+    <div id="libActions">
+      <button id="libAdd" class="primary" disabled>Add to board</button>
+      <button id="libEdit" disabled>✂ Edit / cut out</button>
+    </div>
+  </aside>
+
+  <section id="center">
+    <div id="stage"><canvas id="board"></canvas></div>
+    <div id="timeline" class="panel">
+      <div id="tlControls">
+        <button id="rewindBtn" title="Back to start">⏮</button>
+        <button id="playBtn" class="primary" title="Play / pause (Space)">▶</button>
+        <output id="timeOut">0.00s</output>
+        <button id="keyBtn" title="Add a keyframe for the selected layer at the playhead (K)">◆ Add keyframe</button>
+        <button id="delKeyBtn" title="Delete the selected layer's keyframe at the playhead">◇ Remove</button>
+        <div class="spacer"></div>
+        <label><input type="checkbox" id="loopChk" checked> Loop</label>
+        <label>Length <input type="number" id="durInp" min="1" max="120" step="0.5" value="6"> s</label>
+        <label>Frames/sec
+          <select id="fpsSel">
+            <option value="8">8 (very choppy)</option>
+            <option value="12" selected>12 (cut-out)</option>
+            <option value="24">24</option>
+            <option value="60">60 (smooth)</option>
+          </select>
+        </label>
+      </div>
+      <div id="tlTracks"></div>
+    </div>
+  </section>
+
+  <aside id="rightPanel" class="panel">
+    <div class="panel-head">
+      <h2>Layers</h2>
+      <button id="addFillBtn" title="Add a full-canvas color / pattern / texture layer">+ Layer</button>
+      <button id="dupBtn" title="Duplicate (Ctrl+D)">⧉</button>
+      <button id="delBtn" title="Delete (Del)">🗑</button>
+    </div>
+    <div id="layerList"></div>
+    <div class="panel-head"><h2>Properties</h2></div>
+    <div id="props" class="panel-body"></div>
+  </aside>
+</main>
+
+<div id="editor" class="hidden">
+  <div class="ed-window">
+    <header>
+      <h2 id="edTitle">Edit art</h2>
+      <div class="spacer"></div>
+      <button id="edCancel">Cancel</button>
+      <button id="edSave" title="Save this cut-out as a new piece in the library and keep editing">Save piece to library</button>
+      <button id="edApply" class="primary">Add to board</button>
+    </header>
+    <div class="ed-body">
+      <aside class="ed-side">
+        <h3>Cut-out tools</h3>
+        <div id="edTools" class="toolgrid">
+          <button data-t="erase" title="Rub out parts of the picture (E)">Eraser</button>
+          <button data-t="restore" title="Paint erased parts back (R)">Restore</button>
+          <button data-t="wand" title="Click a color (like a white background) to remove it (W)">Magic wand</button>
+          <button data-t="lasso" title="Draw around a piece, like scissors (L)">Scissors</button>
+          <button data-t="pan" title="Drag to move the view (or hold Space)">Pan</button>
+        </div>
+        <div id="edToolOpts"></div>
+        <h3>Cut-out</h3>
+        <div class="toolgrid">
+          <button id="edUndo" title="Ctrl+Z">↶ Undo</button>
+          <button id="edRedo" title="Ctrl+Y">↷ Redo</button>
+          <button id="edInvert" title="Swap what is kept and what is removed">Invert</button>
+          <button id="edReset" title="Bring the whole picture back">Restore all</button>
+          <button id="edTrim" title="Crop the picture down to the cut-out">Trim</button>
+          <button id="edFit" title="Fit the picture in view">Fit view</button>
+        </div>
+        <label class="row">Backdrop
+          <select id="edBackdrop">
+            <option value="checker">Checker</option>
+            <option value="#111111">Black</option>
+            <option value="#ffffff">White</option>
+            <option value="#ff00c8">Magenta</option>
+            <option value="#3f5fa8">Blue</option>
+          </select>
+        </label>
+        <p class="hint" id="edHint"></p>
+      </aside>
+      <div class="ed-stage"><canvas id="edCanvas"></canvas></div>
+      <aside class="ed-side">
+        <h3>Color &amp; effects</h3>
+        <div id="edFx"></div>
+        <button id="edFxReset">Reset effects</button>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="js/core.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

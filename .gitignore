@@ -1,0 +1,4 @@
+library/
+exports/
+node_modules/
+.claude/
