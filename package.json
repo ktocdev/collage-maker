@@ -1,0 +1,13 @@
+{
+  "name": "collage-maker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser app for building animated cut-out collages.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -11,11 +11,12 @@ How the app is built, for developers and coding agents who need to change or ext
 | Rendering | Canvas 2D |
 | Server | Node.js, built-in modules only (`http`, `fs`, `path`) |
 | Run | `node server.js`, then open `http://localhost:5173` (or `start.bat` on Windows) |
-| Port | 5173, override with the `PORT` environment variable |
+| Port | 5173, override with the `PORT` environment variable (`PORT=0` picks a free port) |
+| Data folder | `library/` and `exports/` live in the project folder, override with `COLLAGE_DATA_DIR` |
 | State | All in memory in the browser. Persistence is by explicit Save (JSON download) or by files the server writes |
 | Tested in | Chrome on Windows only |
 
-There is no build step, no `package.json` and no test suite. Editing a file and reloading the page is the whole development loop. The server sends `Cache-Control: no-store`, so a plain reload always picks up changes. Changes to `server.js` need a server restart.
+There is no build step and the app has no npm dependencies. `package.json` exists only for `npm test`. Editing a file and reloading the page is the whole development loop. The server sends `Cache-Control: no-store`, so a plain reload always picks up changes. Changes to `server.js` need a server restart.
 
 ## Files
 
@@ -174,7 +175,9 @@ Call `commit()` once after each completed user action: on pointer-up, or on an i
 
 ## Server (`server.js`)
 
-Listens on `127.0.0.1` only. Serves files under the project root, refusing paths that resolve outside it. POST requests are rejected if they carry an `Origin` header that does not match the `Host`.
+Listens on `127.0.0.1` only. Static files come from an allowlist: `index.html`, `style.css` and `js/*.js` from the project folder, images under `/library/…` and `.html`/`.css`/`.png` under `/exports/…` from the data folder (`COLLAGE_DATA_DIR`, default the project folder). Everything else, including `server.js`, docs, tests and `.git/`, answers 404. **A new static asset must be added to `APP_FILES` or `APP_SCRIPT`.** Paths that resolve outside their folder are refused. POST requests are rejected if they carry an `Origin` header that does not match the `Host` or cannot be parsed (such as `null`).
+
+`server.js` exports `createServer({ dataDir })` for tests, and only listens when run directly. Malformed export payloads get `400`. Uploads are written with the `wx` flag, so a name collision fails rather than overwriting.
 
 | Endpoint | Purpose |
 | --- | --- |
@@ -226,7 +229,7 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- No automated tests. Verification so far has been by driving the page in headless Chrome and comparing screenshots.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). The server has automated tests (`npm test`). The browser app does not yet; it has been verified only by driving the page in headless Chrome and comparing screenshots.
 - Not yet exercised end to end: project Save/Open, PNG and video export, canvas undo/redo, image upload, and drag-and-drop from the library.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
