@@ -52,4 +52,32 @@ async function cancel({ page }) {
   await page.locator('#editor').and(page.locator('.hidden')).waitFor({ state: 'attached' });
 }
 
-module.exports = { openEditor, scissors, trim, apply, cancel };
+// Picks an editor tool by its button, e.g. 'erase', 'restore', 'wand', 'lasso', 'pan'.
+const tool = ({ page }, t) => page.click(`#edTools [data-t="${t}"]`);
+// Sets a slider in the tool options or effects panel by its label.
+async function slider({ page }, label, value) {
+  await page.locator('#editor label').filter({ hasText: label }).locator('input[type=range]').fill(String(value));
+}
+// A brush stroke through picture points, with the current tool.
+async function stroke(ed, pts) {
+  const { page } = ed, at = await mapper(ed);
+  await page.mouse.move(...at(...pts[0]));
+  await page.mouse.down();
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    for (let s = 1; s <= 8; s++) await page.mouse.move(...at(a[0] + (b[0] - a[0]) * s / 8, a[1] + (b[1] - a[1]) * s / 8));
+  }
+  await page.mouse.up();
+}
+// A single click at a picture point, with the current tool.
+async function clickAt(ed, pt) {
+  const at = await mapper(ed);
+  await ed.page.mouse.click(...at(...pt));
+}
+// Alpha of the layer's mask at picture points [[x, y], ...] (after Apply, untrimmed).
+const maskAlpha = (page, id, pts) => page.evaluate(({ id, pts }) => {
+  const m = CM.app.doc.layers.find(l => l.id === id).art.mask.getContext('2d');
+  return pts.map(([x, y]) => m.getImageData(x, y, 1, 1).data[3]);
+}, { id, pts });
+
+module.exports = { openEditor, mapper, scissors, trim, apply, cancel, tool, slider, stroke, clickAt, maskAlpha };

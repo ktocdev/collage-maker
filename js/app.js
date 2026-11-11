@@ -481,6 +481,7 @@ function renderLayers() {
       class: 'layer-row' + (l.id === sel ? ' sel' : ''), draggable: true,
       onclick: () => select(l.id),
       ondragstart: e => { dragLayerId = l.id; e.dataTransfer.effectAllowed = 'move'; },
+      ondragend: () => { dragLayerId = null; },   // however the drag ended, forget it
       ondragover: e => { if (dragLayerId) { e.preventDefault(); row.classList.add('drop'); } },
       ondragleave: () => row.classList.remove('drop'),
       ondrop: e => {
@@ -531,7 +532,11 @@ function numField(get, set, step = 1) {
   const inp = h('input', {
     type: 'number', step,
     oninput: () => { if (inp.value !== '' && isFinite(+inp.value)) { set(+inp.value); requestRender(); } },
-    onchange: () => { commit(); renderLayers(); },
+    onchange: () => {
+      // Left empty or invalid: nothing was written, so just show the real value again.
+      if (inp.value === '' || !isFinite(+inp.value)) { inp.value = Math.round(get() * 100) / 100; return; }
+      commit(); renderLayers();
+    },
   });
   propSync.push(() => { if (document.activeElement !== inp) inp.value = Math.round(get() * 100) / 100; });
   return inp;
@@ -780,15 +785,26 @@ function editLayerArt(id) {
     onSave: st => saveCutout(st, l.name),
   });
 }
+// The formats the library folder keeps (matches the server's list).
+const KEEPABLE = /\.(jpe?g|png|gif|webp|avif)$/i;
 async function addFiles(files) {
+  const sessionOnly = [];
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue;
     const it = { id: 'A' + nextId++, name: f.name.replace(/\.[^.]+$/, ''), kind: 'source', url: URL.createObjectURL(f) };
     lib.push(it); libSel = it.id;
-    // Also copy it into the library folder so it is there next time.
-    fetch('api/library?name=' + encodeURIComponent(f.name), { method: 'POST', body: f }).catch(() => {});
+    if (!KEEPABLE.test(f.name)) { sessionOnly.push(it.name); continue; }
+    // Also copy it into the library folder so it is there next time. The server may
+    // save it under a new name rather than overwrite, so take the name it reports.
+    fetch('api/library?name=' + encodeURIComponent(f.name), { method: 'POST', body: f })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(saved => { it.name = saved.name; renderLibrary(); })
+      .catch(() => CM.toast(`"${it.name}" is in the library for this session only — it could not be saved to the library folder.`));
   }
   renderLibrary();
+  if (sessionOnly.length) {
+    CM.toast(`${sessionOnly.map(n => `"${n}"`).join(', ')} ${sessionOnly.length > 1 ? 'are' : 'is'} in the library for this session only — the library folder keeps JPG, PNG, GIF, WebP and AVIF pictures.`);
+  }
 }
 $('libAdd').onclick = () => { const it = lib.find(i => i.id === libSel); if (it) addArtToBoard(it); };
 $('libEdit').onclick = () => { const it = lib.find(i => i.id === libSel); if (it) editLibraryItem(it); };

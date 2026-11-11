@@ -173,6 +173,8 @@ While the editor is open, `CM.editorOpen` is true and the main canvas keyboard s
 
 Adding to the canvas always clones the art (`CM.cloneArt`), so library items are never altered by edits to layers. Saving a piece from the editor adds an in-memory `cutout` item immediately and posts a cropped PNG to the server in the background. After a restart, that piece comes back as an ordinary transparent PNG; its original mask and unerased pixels are not stored.
 
+Uploaded or dropped pictures are added at once (from a blob URL) and copied to `library/` in the background. The server may save a picture under a new name rather than overwrite one (`photo-2`); the tile takes that name. Formats the folder doesn't keep (anything but JPG, PNG, GIF, WebP and AVIF, listed in `KEEPABLE`, which must match the server's list) are not sent, and a toast says the picture is for this session only. A failed copy shows the same kind of message.
+
 ## Undo history (`app.js`)
 
 `commit()` pushes a snapshot of the document (size, duration, fps, loop, selection, and a deep copy of every layer made by `cloneLayer`) and truncates any redo tail. Up to 80 snapshots are kept. Art states are copied by reference, which is safe only because they are immutable.
@@ -235,8 +237,8 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, undo/redo, selection handles, the timeline, playback, motion presets and easings.
-- Not yet exercised end to end: PNG and video export, image upload, and drag-and-drop from the library.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, undo/redo, selection handles, the timeline, playback, motion presets and easings, the library inputs, the layer and properties panels, and the cut-out editor's tools.
+- Not yet exercised end to end: PNG, HTML and video export.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
 - Performance has only been tried with a handful of layers and pictures up to 1600 px. Each art layer holds its own full-size mask and output canvases, plus a source canvas shared with other copies of the same picture.
