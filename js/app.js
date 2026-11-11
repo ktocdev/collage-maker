@@ -48,13 +48,13 @@ function addLayer(l) { doc.layers.push(l); sel = l.id; commit(); refresh(); }
 let hist = [], hi = -1;
 function commit() {
   hist.length = hi + 1;
-  hist.push({ w: doc.w, h: doc.h, duration: doc.duration, fps: doc.fps, sel, layers: doc.layers.map(cloneLayer) });
+  hist.push({ w: doc.w, h: doc.h, duration: doc.duration, fps: doc.fps, loop: doc.loop, sel, layers: doc.layers.map(cloneLayer) });
   if (hist.length > 80) hist.shift();
   hi = hist.length - 1;
   syncButtons();
 }
 function restore(s) {
-  Object.assign(doc, { w: s.w, h: s.h, duration: s.duration, fps: s.fps });
+  Object.assign(doc, { w: s.w, h: s.h, duration: s.duration, fps: s.fps, loop: s.loop });
   doc.layers = s.layers.map(cloneLayer);
   sel = byId(s.sel) ? s.sel : null;
   draft = drag = null;
@@ -1043,7 +1043,7 @@ $('playBtn').onclick = () => (playing ? pause() : play());
 $('rewindBtn').onclick = () => { pause(); setTime(0); };
 $('keyBtn').onclick = addKeyHere;
 $('delKeyBtn').onclick = delKeyHere;
-$('loopChk').onchange = e => { doc.loop = e.target.checked; };
+$('loopChk').onchange = e => { doc.loop = e.target.checked; commit(); };
 $('durInp').onchange = e => {
   doc.duration = clamp(+e.target.value || 6, 1, 120); e.target.value = doc.duration;
   for (const l of doc.layers) l.keys = l.keys.filter(k => k.t <= doc.duration);

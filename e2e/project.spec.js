@@ -11,7 +11,7 @@ async function buildScene(page) {
   // duration discards keyframes past the end.
   await page.selectOption('#sizeSel', '960x720');
   await page.fill('#durInp', '4');
-  await page.locator('#durInp').dispatchEvent('change');
+  await page.press('#durInp', 'Tab');
   await page.selectOption('#fpsSel', '24');
   await page.uncheck('#loopChk');
 
