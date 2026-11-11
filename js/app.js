@@ -80,8 +80,10 @@ function evalBase(l, t) {
   if (!k.length) return pick(l);
   if (t <= k[0].t) return pick(k[0]);
   if (t >= k[k.length - 1].t) return pick(k[k.length - 1]);
+  // The pair of keyframes around t, starting at a keyframe exactly at t (so "Jump" shows its pose).
   let i = 1;
-  while (k[i].t < t) i++;
+  while (k[i].t <= t) i++;
+  if (k[i - 1].t === t) return pick(k[i - 1]);
   const a = k[i - 1], b = k[i], e = EASE[l.ease]((t - a.t) / (b.t - a.t)), p = {};
   for (const n of PROPS) p[n] = a[n] + (b[n] - a[n]) * e;
   return p;
@@ -331,7 +333,7 @@ cv.addEventListener('pointerdown', e => {
     const cur = selLayer();
     if (cur && cur.type !== 'fill' && cur.visible) {
       const hd = handles(cur), r = 10 / viewScale, p0 = evalBase(cur, time);
-      if (dist(pt, hd.rot) < r) { drag = { mode: 'rot', id: cur.id, p0, a0: Math.atan2(pt[1] - hd.p.y, pt[0] - hd.p.x), c: hd.p }; return; }
+      if (dist(pt, hd.rot) < r) { drag = { mode: 'rot', id: cur.id, p0, last: Math.atan2(pt[1] - hd.p.y, pt[0] - hd.p.x), turned: 0, c: hd.p }; return; }
       if (hd.corners.some(c => dist(pt, c) < r)) { drag = { mode: 'scale', id: cur.id, p0, u0: unrot(hd.p, pt), c: hd.p }; return; }
     }
     const l = topHit(pt);
@@ -364,7 +366,12 @@ cv.addEventListener('pointermove', e => {
   drag.moved = true;
   if (drag.mode === 'move') write(l, { x: drag.p0.x + pt[0] - drag.start[0], y: drag.p0.y + pt[1] - drag.start[1] });
   else if (drag.mode === 'rot') {
-    let rot = drag.p0.rot + (Math.atan2(pt[1] - drag.c.y, pt[0] - drag.c.x) - drag.a0) / RAD;
+    // Add up the angle step by step: atan2 jumps by a full turn at 9 o'clock.
+    const a = Math.atan2(pt[1] - drag.c.y, pt[0] - drag.c.x);
+    let step = a - drag.last;
+    if (step > Math.PI) step -= 2 * Math.PI; else if (step <= -Math.PI) step += 2 * Math.PI;
+    drag.turned += step; drag.last = a;
+    let rot = drag.p0.rot + drag.turned / RAD;
     if (e.shiftKey) rot = Math.round(rot / 15) * 15;
     write(l, { rot });
   } else if (drag.mode === 'scale') {
@@ -1046,7 +1053,12 @@ $('delKeyBtn').onclick = delKeyHere;
 $('loopChk').onchange = e => { doc.loop = e.target.checked; commit(); };
 $('durInp').onchange = e => {
   doc.duration = clamp(+e.target.value || 6, 1, 120); e.target.value = doc.duration;
-  for (const l of doc.layers) l.keys = l.keys.filter(k => k.t <= doc.duration);
+  for (const l of doc.layers) {
+    // A layer that loses every keyframe keeps its pose at the new end, as when the last one is deleted.
+    const end = evalBase(l, doc.duration);
+    l.keys = l.keys.filter(k => k.t <= doc.duration);
+    if (!l.keys.length) Object.assign(l, end);
+  }
   setTime(Math.min(time, doc.duration)); commit(); refresh();
 };
 $('fpsSel').onchange = e => { doc.fps = +e.target.value; setTime(time); commit(); };
@@ -1100,5 +1112,5 @@ fitBoard();
 refresh();
 const ready = loadLibrary();   // resolves once the library list has loaded (or failed)
 
-CM.app = { ready, doc, lib, addArtToBoard, itemArt, addLayer, newShape, newFill, select, setTime, addKey, commit, refresh, paint, editLibraryItem, exportHTML };
+CM.app = { ready, doc, lib, evalBase, evalLayer, addArtToBoard, itemArt, addLayer, newShape, newFill, select, setTime, addKey, commit, refresh, paint, editLibraryItem, exportHTML };
 })();

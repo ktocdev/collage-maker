@@ -20,38 +20,8 @@ function state(page) {
   });
 }
 
-// Doc coordinates -> screen, for the main board.
-async function board(page) {
-  const r = await page.locator('#board').boundingBox();
-  const { w, h } = await page.evaluate(() => ({ w: CM.app.doc.w, h: CM.app.doc.h }));
-  return (x, y) => [r.x + x * r.width / w, r.y + y * r.height / h];
-}
-async function dragOnBoard(page, from, to) {
-  const at = await board(page);
-  await page.mouse.move(...at(...from));
-  await page.mouse.down();
-  for (let i = 1; i <= 8; i++) await page.mouse.move(...at(from[0] + (to[0] - from[0]) * i / 8, from[1] + (to[1] - from[1]) * i / 8));
-  await page.mouse.up();
-}
-// Keyboard shortcuts are ignored while a text field or select has focus.
-async function key(page, combo) {
-  await page.evaluate(() => document.activeElement?.blur());
-  await page.keyboard.press(combo);
-}
+const { dragOnBoard, key, row, addFromLibrary, selectedLayer } = require('./support/board.js');
 const prop = page => page.locator('#props');
-// A layer row by its exact name (rows also contain icon characters).
-const row = (page, name) => page.locator('#layerList .layer-row')
-  .filter({ has: page.locator('.name').getByText(name, { exact: true }) });
-// Double-click a library tile; adding loads the picture, so wait for the new layer.
-async function addFromLibrary(page, name) {
-  const n = await page.evaluate(() => CM.app.doc.layers.length);
-  await page.locator('#libGrid .lib-item', { hasText: name }).dblclick();
-  await expect.poll(() => page.evaluate(() => CM.app.doc.layers.length), `double-click adds ${name}`).toBe(n + 1);
-}
-const selectedLayer = page => page.evaluate(() => {
-  const name = document.querySelector('#layerList .layer-row.sel .name')?.textContent;
-  return CM.app.doc.layers.find(l => l.name === name)?.id;
-});
 
 // A sequence of different user actions, each done through the UI. Each is one undo step.
 const STEPS = [
