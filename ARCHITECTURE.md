@@ -31,6 +31,9 @@ js/app.js         Everything else: document model, rendering, tools, panels, tim
 library/          Source pictures (any jpg, png, gif, webp, avif placed here is listed)
 library/cutouts/  PNG pieces saved from the editor
 exports/          HTML exports, one folder each
+test/             Server tests (node:test)
+e2e/              Browser tests (Playwright); e2e/support/ holds the fixtures and a PNG generator
+playwright.config.js
 ```
 
 ### Script loading and the `CM` namespace
@@ -39,7 +42,7 @@ The three scripts are classic (non-module) scripts loaded in order: `core.js`, `
 
 - `core.js` creates `CM` and adds: `canvas`, `copyCanvas`, `loadImage`, `clamp`, `PATTERNS`, `TEXTURES`, `tile`, `defaultFill`, `fillStyle`, `defaultFx`, `artFromImage`, `renderFx`, `alphaBounds`, `buildArt`, `cloneArt`, `artCrop`.
 - `editor.js` adds DOM helpers `CM.h`, `CM.slider`, `CM.select`, `CM.toast`, plus `CM.openEditor` and the flag `CM.editorOpen`.
-- `app.js` exposes `CM.app` (the document, the library list and a few functions). This exists for scripted testing from the browser console or a DevTools driver; nothing in the app depends on it.
+- `app.js` exposes `CM.app` (the document, the library list and a few functions). This exists for the browser tests and for the console; nothing in the app depends on it. `CM.app.ready` is a promise that resolves once the library list has loaded (or failed), so tests wait on it rather than racing start-up.
 
 Load order matters: `app.js` uses `CM.h` from `editor.js`, and both use `core.js`.
 
@@ -196,7 +199,7 @@ Listens on `127.0.0.1` only. Static files come from an allowlist: `index.html`, 
   arts: [ { orig, mask, fx } ] }          // orig and mask are PNG data URLs
 ```
 
-Art states shared by several layers are stored once. On open, layer ids are reassigned and each art state is rebuilt with `CM.buildArt`. Library cut-outs are not part of the project file.
+Art states shared by several layers are stored once. On open, layer ids are reassigned and each art state is rebuilt with `CM.buildArt`. Open checks the whole file and builds every layer before it touches the document, so a damaged file shows a message and changes nothing. Library cut-outs are not part of the project file.
 
 ### HTML export (`exportHTML` in `app.js`)
 
@@ -229,8 +232,8 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). The server has automated tests (`npm test`). The browser app does not yet; it has been verified only by driving the page in headless Chrome and comparing screenshots.
-- Not yet exercised end to end: project Save/Open, PNG and video export, canvas undo/redo, image upload, and drag-and-drop from the library.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up and project Save/Open.
+- Not yet exercised end to end: PNG and video export, canvas undo/redo, image upload, and drag-and-drop from the library.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
 - Performance has only been tried with a handful of layers and pictures up to 1600 px. Each art layer holds its own full-size mask and output canvases, plus a source canvas shared with other copies of the same picture.

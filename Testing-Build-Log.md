@@ -14,6 +14,8 @@ A running record of the work to give Collage Maker a test suite. It tracks the p
 | 2026-11-10 | Split the work into 8 PRs, one branch each (`CM-1` … `CM-8`). | A single PR would be too large to review. Each PR leaves the suite green and makes sense on its own. |
 | 2026-11-10 | Check state before screenshots: act through the UI, then assert on `CM.app.doc`. | It keeps the tests stable and fast. Screenshots are kept for things that only exist as pixels. |
 | 2026-11-10 | Add a dependency-free `package.json` in CM-1, so `npm test` is the one command from the start. CM-2 adds Playwright to it. | Node 24's `node --test` needs a glob rather than a folder name, so a script saves everyone from remembering it. |
+| 2026-11-10 | Browser tests live in `e2e/`, server tests stay in `test/`. Test pictures are generated in code, never copied from `library/`. | The two runners stay separate and simple. Generated pictures are small, known and free to publish, which the portfolio plan needs (F6). |
+| 2026-11-10 | The `page` fixture fails any test that logs a page error or `console.error`. | The earlier manual runs used "no errors" as their main check, so it should be automatic. It caught B5 straight away. |
 | 2026-11-10 | `server.js` exports `createServer({ dataDir })` and only listens when run directly. `PORT=0` now means "pick a free port". | Tests start a server in-process on a temp folder and a free port, with no child process to manage. Before this, `PORT=0` silently fell back to 5173. |
 
 ## PR plan
@@ -57,13 +59,20 @@ Every PR also:
 ### CM-2: Playwright harness and project Save/Open
 
 - [x] Branch created from `main` after CM-1 merged
-- [ ] Playwright added as the only dev dependency. `npm test` runs the server tests and the browser tests
-- [ ] Fixture: a server per test worker on a free port, with a temp data folder seeded with a few small generated test pictures (never the real library)
-- [ ] Fixture fails a test on any uncaught page error or `console.error`
-- [ ] A start-up signal tests can wait on, so they don't race the library load (F5)
-- [ ] Smoke test: the page loads, panels render, the library lists the seeded pictures
-- [ ] Save → reload → Open round trip with art, shapes, fills and keyframes. Compare `doc` before and after, and compare `paint` output (#1)
-- [ ] Bugs found are fixed or logged
+- [x] Playwright 1.65.0 added as the only dev dependency (pinned exactly). `npm install` also downloads Chromium (`postinstall`). `npm test` runs the server tests, then the browser tests. `npm run test:server` and `npm run test:e2e` run each on its own
+- [x] Fixture ([e2e/support/fixtures.js](e2e/support/fixtures.js)): a server per test worker on a free port, with a temp data folder seeded with three generated pictures ([e2e/support/png.js](e2e/support/png.js)). The real library is never used
+- [x] Fixture fails a test on any uncaught page error or `console.error`. Chrome's `willReadFrequently` advice is ignored, per the handoff
+- [x] Start-up signal: `CM.app.ready` (F5, resolved)
+- [x] Smoke tests ([e2e/smoke.spec.js](e2e/smoke.spec.js)), 4 tests: default document, library order and thumbnails, no error message, seeded library only
+- [x] Project tests ([e2e/project.spec.js](e2e/project.spec.js)), 8 tests (#1):
+  - Save's file contents, including that a shared art state is stored once
+  - Save → reload → Open: every layer field, keyframes, fills, motion and art sharing compared exactly; art `orig`/`mask`/`out` and 7 rendered frames compared pixel by pixel
+  - Fresh ids and no selection after Open; Save → Open → Save → Open is stable; Ctrl+S; non-project and broken JSON; damaged projects (B4, B5); opening the same file twice
+  - The scene covers: an edited cut-out (erased and half-transparent mask, 3 effects), flipped, scaled and rotated layers, a duplicate sharing art, a soft-alpha picture, a hidden layer, a star with radial gradient and outline, a pattern rect, a smooth textured path, an open line, a gradient fill with blend, and a textured background. Each uses its own ease and motion, and the doc has a non-default size, duration, fps and loop
+- [x] **Sanity check that the tests can fail.** The app was broken on purpose 3 ways (Save drops effects, Open ignores `loop`, Open nudges a layer 1 px). The suite caught all three
+- [x] Bugs found and fixed: B4, B5 (below)
+- [x] Suite passes 3 runs in a row: 35 server + 12 browser tests, about 4 s for the browser part
+- [x] ARCHITECTURE.md updated (test folders, `CM.app.ready`, Open validation)
 - [ ] PR opened
 
 ## Bugs
@@ -72,6 +81,8 @@ Every PR also:
 | --- | --- | --- | --- | --- | --- |
 | B1 | CM-1 | High | A POST carrying `Origin: null` (or any Origin that isn't a URL) **crashed the server process**. `new URL('null')` threw inside the request handler, and nothing caught it. Browsers send `Origin: null` from sandboxed iframes, `file://` pages and some redirects, so any such page could take the app down. Reproduced against the original server before fixing. | Fixed in CM-1 | A `sameOrigin(req)` helper wraps the parse in `try` and treats an unparseable Origin as foreign (403). Tests: `rejects an unparseable Origin…` for both endpoints |
 | B2 | CM-1 | Medium | Malformed export payloads were mishandled. A file entry with no `text` or `base64` was written as the literal text `undefined` (returning 200). A JSON body of `null`, or one that wasn't JSON, returned 500 with an internal error message instead of 400. Reproduced against the original server. | Fixed in CM-1 | The export endpoint validates the payload before creating any folder: each entry needs an allowed `path` and string `text` or `base64`. Bad JSON gets 400. Test: `export rejects malformed payloads…` |
+| B4 | CM-2 | Medium | **Opening a damaged project half-applied it.** `openProject` copied the file's size, duration, fps and loop onto the document *before* reading the layers. A file with no `layers` list changed the canvas to the file's settings, then failed, leaving the user's work on the wrong canvas size and with the controls out of sync. Reproduced by test before fixing. | Fixed in CM-2 | Open now checks the file's shape (`doc`, `layers`, `arts`, positive numeric settings) and builds every art state and layer first. It only assigns to `doc` once all of that succeeds. Only the five known settings are copied, not the whole `doc` object. Test: `Opening a damaged project…` |
+| B5 | CM-2 | Medium | **A project whose art layer pointed at a missing picture broke the page.** The layer was added with `art: undefined`, so every redraw threw `Cannot read properties of undefined (reading 'bounds')`. No message was shown. Reproduced against the original code. Separately, a picture that failed to decode put its whole base64 data URL into the toast. | Fixed in CM-2 | Each art layer's index is checked while building the layers, giving "The project file is damaged." An unreadable picture gives "A picture in the project file could not be read." |
 | B3 | CM-1 | Low | `PORT=0` was ignored (`Number('0') \|\| 5173` is 5173), so the server couldn't be asked for a free port. The start-up message also printed the configured port, not the real one. | Fixed in CM-1 | `PORT` is used whenever it's set. The message prints `server.address().port` |
 
 ## Findings
@@ -89,4 +100,8 @@ Things learned that aren't bugs, or that still need a decision.
   2. drop or replace the three server-backed actions: Save piece to library, image upload into `library/`, and HTML export to `exports/` (a ZIP download could stand in for export),
   3. ship demo pictures you own or that are licensed for reuse. The personal pictures in `library/` and `exports/` stay out of the repo (`.gitignore`).
   Project Save/Open, PNG and video already work with no server. This is proposed as **CM-9** after the test suite exists, so the static build can run the same Playwright tests. Not started; scope to be agreed.
-- **F5 (CM-1):** `CM.app` (the test hook) and the server's `createServer` are the only test seams so far. CM-2 will need the page to report when start-up has finished, for example by waiting for the `/api/library` response, so tests don't race the initial library load.
+- **F5 (CM-1), resolved in CM-2:** Tests needed to know when start-up had finished. `app.js` now keeps the promise from `loadLibrary()` and exposes it as `CM.app.ready`. This is the only app change CM-2 needed besides the B4/B5 fix.
+- **F7 (CM-2):** Open ignores the file's `version`. A file from a future version with a changed format would be opened as if it were version 1. Nothing writes anything but version 1 today, so this is logged only. Whoever bumps the version should add a check ("made with a newer version").
+- **F8 (CM-2), for CM-3 (from reading the code, not yet tested):** Open doesn't clear undo history; it pushes a new snapshot. So **Undo right after Open goes back to the project that was open before.** That may be intended, but it's surprising. Also, undo snapshots don't store `doc.loop`, so undo never changes the Loop checkbox. Both are to be checked in CM-3 (undo/redo).
+- **F9 (CM-2):** Rendered frames and art pixels match after a round trip within 2 levels per channel (the test's threshold), including the soft-alpha picture and the half-transparent mask. So the PNG data-URL encoding of `orig` and `mask` loses nothing that shows.
+- **F10 (CM-2):** `npm install` downloads Chromium (about 120 MB) through `postinstall`, so a fresh clone needs only `npm install && npm test`. If that's unwanted for people who only run the app, the app itself needs no install at all: `node server.js` still works with nothing installed.

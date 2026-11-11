@@ -5,9 +5,15 @@
   "description": "Browser app for building animated cut-out collages.",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "npm run test:server && npm run test:e2e",
+    "test:server": "node --test \"test/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "postinstall": "playwright install chromium"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
   }
 }

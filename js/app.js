@@ -818,12 +818,24 @@ function saveProject() {
 async function openProject(file) {
   try {
     const data = JSON.parse(await file.text());
-    if (data.app !== 'collage-maker') throw new Error('That is not a Collage Maker project file.');
-    const toCanvas = async url => CM.copyCanvas(await CM.loadImage(url));
+    if (!data || data.app !== 'collage-maker') throw new Error('That is not a Collage Maker project file.');
+    // Check and build everything first, so a damaged file changes nothing.
+    const damaged = () => new Error('The project file is damaged.');
+    if (!data.doc || !Array.isArray(data.layers) || !Array.isArray(data.arts)) throw damaged();
+    const { w, h, duration, fps, loop } = data.doc;
+    if (![w, h, duration, fps].every(n => Number.isFinite(n) && n > 0)) throw damaged();
+    const toCanvas = async url => {
+      try { return CM.copyCanvas(await CM.loadImage(url)); }
+      catch { throw new Error('A picture in the project file could not be read.'); }
+    };
     const arts = [];
     for (const a of data.arts) arts.push(CM.buildArt({ orig: await toCanvas(a.orig), mask: await toCanvas(a.mask), fx: { ...CM.defaultFx(), ...a.fx } }));
-    Object.assign(doc, data.doc);
-    doc.layers = data.layers.map(l => ({ ...l, id: 'L' + nextId++, art: l.type === 'art' ? arts[l.art] : undefined }));
+    const layers = data.layers.map(l => {
+      if (l.type === 'art' && !arts[l.art]) throw damaged();
+      return { ...l, id: 'L' + nextId++, art: l.type === 'art' ? arts[l.art] : undefined };
+    });
+    Object.assign(doc, { w, h, duration, fps, loop: !!loop });
+    doc.layers = layers;
     sel = null; time = 0;
     syncDocControls(); fitBoard(); commit(); refresh();
   } catch (err) { CM.toast('Could not open: ' + err.message); }
@@ -1086,7 +1098,7 @@ setTool('select');
 commit();
 fitBoard();
 refresh();
-loadLibrary();
+const ready = loadLibrary();   // resolves once the library list has loaded (or failed)
 
-CM.app = { doc, lib, addArtToBoard, itemArt, addLayer, newShape, newFill, select, setTime, addKey, commit, refresh, paint, editLibraryItem, exportHTML };
+CM.app = { ready, doc, lib, addArtToBoard, itemArt, addLayer, newShape, newFill, select, setTime, addKey, commit, refresh, paint, editLibraryItem, exportHTML };
 })();
