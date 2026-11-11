@@ -27,7 +27,7 @@ Ordered so the riskiest gaps (losing a user's work) get covered first, and so th
 | 1 | `CM-1` | This log. Add a `COLLAGE_DATA_DIR` env var so the server can use a temp folder. Server tests on `node:test`. Fix any server bugs found. | Step 1, #13 | Merged ([#1](https://github.com/ktocdev/collage-maker/pull/1)) |
 | 2 | `CM-2` | Playwright added to `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | Merged ([#2](https://github.com/ktocdev/collage-maker/pull/2)) |
 | 3 | `CM-3` | Re-editing an art layer already on the canvas (`delta` compensation for rotated, scaled, flipped and trimmed layers, with and without keyframes). Canvas undo and redo. | #2, #3 | Merged ([#3](https://github.com/ktocdev/collage-maker/pull/3)) |
-| 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | In progress |
+| 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | In review ([#4](https://github.com/ktocdev/collage-maker/pull/4)) |
 | 5 | `CM-5` | Library input paths (upload, drop files, drag to canvas, double-click). Layer panel. Properties panel. The rest of the editor. | #9, #10, #11, #12 | Not started |
 | 6 | `CM-6` | PNG export, HTML export (screenshot compared with a tolerance), video export (non-empty WebM at most). Reference images for every pattern, texture and effect. | #4, #5, #14, Step 4 | Not started |
 | 7 | `CM-7` | Move the pure maths out of the `app.js` IIFE (`evalBase`, `evalLayer`, easings, `shapeD`, `toDoc`/`unrot`, `snapT`, `cloneLayer`) and unit-test it in Node. | Step 3 | Not started |
@@ -113,7 +113,7 @@ Every PR also:
 - [x] Flakiness: two timing races in the *tests* were found and fixed (F14). The timeline and playback specs then passed 10 repeats each (140/140 and 80/80)
 - [x] Bugs found and fixed: B8, B9, B10
 - [x] Suite passes 3 runs in a row: 35 server + 112 browser tests (4 expected failures for B6), about 25 s for the browser part
-- [ ] PR opened
+- [x] PR opened: [#4](https://github.com/ktocdev/collage-maker/pull/4)
 
 ## Bugs
 
