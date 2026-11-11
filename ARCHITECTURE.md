@@ -160,7 +160,9 @@ Drawing an art layer draws only the `bounds` region of `out`, centred on the lay
 - **Trim** crops `orig` and `mask` to the visible bounds and records the crop offset.
 - Editor undo keeps up to 15 snapshots of `{ orig, mask, trim offset }`.
 
-`onApply` receives `delta`: how far the cut-out's centre moved in picture pixels, accounting for trims. When re-editing a layer already on the canvas, `app.js` uses it to shift the layer (and each of its keyframes, rotated and scaled) so the remaining pixels stay exactly where they were. Any change to how `bounds` or trimming works must keep this compensation correct.
+`onApply` receives `delta`: how far the cut-out's centre moved in picture pixels, accounting for trims. When re-editing a layer already on the canvas, `app.js` uses it to shift the layer (and each of its keyframes, rotated and scaled) so the remaining pixels stay exactly where they were. Any change to how `bounds` or trimming works must keep this compensation correct; `e2e/re-edit.spec.js` checks it.
+
+**Known limitation (B6 in the build log):** this is exact at rest and at each keyframe, but not in between keyframes that differ in rotation or scale, nor during wobble, pulse or spin. Shifting the layer moves the point it rotates and scales around, so its arc changes. The proper fix is a pivot offset on art layers.
 
 While the editor is open, `CM.editorOpen` is true and the main canvas keyboard shortcuts are disabled.
 
@@ -172,7 +174,7 @@ Adding to the canvas always clones the art (`CM.cloneArt`), so library items are
 
 ## Undo history (`app.js`)
 
-`commit()` pushes a snapshot of the document (settings, selection, and a deep copy of every layer made by `cloneLayer`) and truncates any redo tail. Up to 80 snapshots are kept. Art states are copied by reference, which is safe only because they are immutable.
+`commit()` pushes a snapshot of the document (size, duration, fps, loop, selection, and a deep copy of every layer made by `cloneLayer`) and truncates any redo tail. Up to 80 snapshots are kept. Art states are copied by reference, which is safe only because they are immutable.
 
 Call `commit()` once after each completed user action: on pointer-up, or on an input's `change` event, not on every `input` event. Code that adds a layer field holding an object or array must also copy it in `cloneLayer`, or undo will share it between snapshots.
 
@@ -232,8 +234,8 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up and project Save/Open.
-- Not yet exercised end to end: PNG and video export, canvas undo/redo, image upload, and drag-and-drop from the library.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, and undo/redo.
+- Not yet exercised end to end: PNG and video export, image upload, and drag-and-drop from the library.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
 - Performance has only been tried with a handful of layers and pictures up to 1600 px. Each art layer holds its own full-size mask and output canvases, plus a source canvas shared with other copies of the same picture.
