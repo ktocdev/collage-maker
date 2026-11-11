@@ -60,6 +60,17 @@ test('a picture the library folder cannot keep is used for this session, with a 
   await expect.poll(() => layerCount(app)).toBe(2);
 });
 
+// B16: pictures kept for this session only never reach the server, so nothing renamed
+// a second one with the same name.
+test('a second session-only picture with the same name gets -2 too', async ({ app }) => {
+  const bmp = { name: 'bitmap.bmp', mimeType: 'image/bmp', buffer: encodeBMP(8, 8, () => [200, 20, 20]) };
+  await app.setInputFiles('#uploadFile', [bmp]);
+  await expect.poll(() => tiles(app)).toContain('bitmap');
+  await app.setInputFiles('#uploadFile', [bmp]);
+  await expect.poll(() => tiles(app)).toContain('bitmap-2');
+  expect((await tiles(app)).filter(n => n === 'bitmap')).toHaveLength(1);
+});
+
 // The server never overwrites: an upload with a taken name is saved as name-2.
 test('uploading a name that is already taken shows the name it was saved under', async ({ app, server }) => {
   await app.setInputFiles('#uploadFile', [{ name: 'quadrants.png', mimeType: 'image/png', buffer: red }]);

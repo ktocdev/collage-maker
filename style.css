@@ -126,4 +126,5 @@ main { display: grid; grid-template-columns: 250px minmax(0, 1fr) 290px; min-hei
 #edCanvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 .toolgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
 
-#toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 5px; z-index: 20; box-shadow: 3px 3px 0 var(--red); }
+#toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 5px; z-index: 20; box-shadow: 3px 3px 0 var(--red); max-width: min(560px, 90vw); cursor: pointer; }
+#toast.warn { background: var(--mustard); color: var(--ink); font-weight: 600; padding: 12px 18px; box-shadow: 4px 4px 0 var(--ink); }

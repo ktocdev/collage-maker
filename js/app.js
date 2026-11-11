@@ -754,7 +754,7 @@ async function saveCutout(st, baseName) {
     const saved = await r.json();
     it.name = saved.name; it.url = saved.url;
     renderLibrary();
-  } catch { CM.toast('Saved for this session only — could not write it to the library folder.'); }
+  } catch { CM.toast('Saved for this session only — could not write it to the library folder.', { warn: true }); }
 }
 async function editLibraryItem(it) {
   try {
@@ -791,7 +791,11 @@ async function addFiles(files) {
   const sessionOnly = [];
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue;
-    const it = { id: 'A' + nextId++, name: f.name.replace(/\.[^.]+$/, ''), kind: 'source', url: URL.createObjectURL(f) };
+    // Never two pictures with the same name: add -2, -3… like the server does.
+    const base = f.name.replace(/\.[^.]+$/, '');
+    let name = base;
+    for (let i = 2; lib.some(x => x.name === name); i++) name = `${base}-${i}`;
+    const it = { id: 'A' + nextId++, name, kind: 'source', url: URL.createObjectURL(f) };
     lib.push(it); libSel = it.id;
     if (!KEEPABLE.test(f.name)) { sessionOnly.push(it.name); continue; }
     // Also copy it into the library folder so it is there next time. The server may
@@ -799,11 +803,11 @@ async function addFiles(files) {
     fetch('api/library?name=' + encodeURIComponent(f.name), { method: 'POST', body: f })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
       .then(saved => { it.name = saved.name; renderLibrary(); })
-      .catch(() => CM.toast(`"${it.name}" is in the library for this session only — it could not be saved to the library folder.`));
+      .catch(() => CM.toast(`"${it.name}" is in the library for this session only — it could not be saved to the library folder.`, { warn: true }));
   }
   renderLibrary();
   if (sessionOnly.length) {
-    CM.toast(`${sessionOnly.map(n => `"${n}"`).join(', ')} ${sessionOnly.length > 1 ? 'are' : 'is'} in the library for this session only — the library folder keeps JPG, PNG, GIF, WebP and AVIF pictures.`);
+    CM.toast(`${sessionOnly.map(n => `"${n}"`).join(', ')} ${sessionOnly.length > 1 ? 'are' : 'is'} in the library for this session only — the library folder keeps JPG, PNG, GIF, WebP and AVIF pictures.`, { warn: true });
   }
 }
 $('libAdd').onclick = () => { const it = lib.find(i => i.id === libSel); if (it) addArtToBoard(it); };
@@ -861,7 +865,7 @@ async function openProject(file) {
     doc.layers = layers;
     sel = null; time = 0;
     syncDocControls(); fitBoard(); commit(); refresh();
-  } catch (err) { CM.toast('Could not open: ' + err.message); }
+  } catch (err) { CM.toast('Could not open: ' + err.message, { warn: true }); }
 }
 function exportPNG() {
   pause();
