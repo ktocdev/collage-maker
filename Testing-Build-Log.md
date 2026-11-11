@@ -47,7 +47,7 @@ Every PR also:
 - [x] Bugs found and fixed: B1, B2, B3 (below)
 - [x] Suite passes 3 runs in a row (about 1.7 s). The real `library/` and `exports/` are untouched
 - [x] ARCHITECTURE.md updated for the new env var, `PORT=0` and the server's behaviour
-- [ ] PR opened
+- [x] PR opened: [#1](https://github.com/ktocdev/collage-maker/pull/1)
 
 **Run:** `npm test`
 
