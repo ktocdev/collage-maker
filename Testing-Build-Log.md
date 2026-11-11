@@ -22,8 +22,8 @@ Ordered so the riskiest gaps (losing a user's work) get covered first, and so th
 
 | PR | Branch | Scope | Handoff items | Status |
 | --- | --- | --- | --- | --- |
-| 1 | `CM-1` | This log. Add a `COLLAGE_DATA_DIR` env var so the server can use a temp folder. Server tests on `node:test`. Fix any server bugs found. | Step 1, #13 | In review |
-| 2 | `CM-2` | `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | Not started |
+| 1 | `CM-1` | This log. Add a `COLLAGE_DATA_DIR` env var so the server can use a temp folder. Server tests on `node:test`. Fix any server bugs found. | Step 1, #13 | Merged ([#1](https://github.com/ktocdev/collage-maker/pull/1)) |
+| 2 | `CM-2` | Playwright added to `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | In progress |
 | 3 | `CM-3` | Re-editing an art layer already on the canvas (`delta` compensation for rotated, scaled, flipped and trimmed layers, with and without keyframes). Canvas undo and redo. | #2, #3 | Not started |
 | 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | Not started |
 | 5 | `CM-5` | Library input paths (upload, drop files, drag to canvas, double-click). Layer panel. Properties panel. The rest of the editor. | #9, #10, #11, #12 | Not started |
@@ -50,8 +50,21 @@ Every PR also:
 - [x] Suite passes 3 runs in a row (about 1.7 s). The real `library/` and `exports/` are untouched
 - [x] ARCHITECTURE.md updated for the new env var, `PORT=0` and the server's behaviour
 - [x] PR opened: [#1](https://github.com/ktocdev/collage-maker/pull/1)
+- [x] Merged into `main` on 2026-11-10 (merge commit `04196ba`)
 
 **Run:** `npm test`
+
+### CM-2: Playwright harness and project Save/Open
+
+- [x] Branch created from `main` after CM-1 merged
+- [ ] Playwright added as the only dev dependency. `npm test` runs the server tests and the browser tests
+- [ ] Fixture: a server per test worker on a free port, with a temp data folder seeded with a few small generated test pictures (never the real library)
+- [ ] Fixture fails a test on any uncaught page error or `console.error`
+- [ ] A start-up signal tests can wait on, so they don't race the library load (F5)
+- [ ] Smoke test: the page loads, panels render, the library lists the seeded pictures
+- [ ] Save → reload → Open round trip with art, shapes, fills and keyframes. Compare `doc` before and after, and compare `paint` output (#1)
+- [ ] Bugs found are fixed or logged
+- [ ] PR opened
 
 ## Bugs
 
