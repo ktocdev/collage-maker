@@ -52,7 +52,7 @@
     <div id="libGrid" class="panel-body"></div>
     <div id="libActions">
       <button id="libAdd" class="primary" disabled>Add to board</button>
-      <button id="libEdit" disabled>✂ Edit / cut out</button>
+      <button id="libEdit" disabled aria-label="✂ Edit / cut out the selected library picture">✂ Edit / cut out</button>
     </div>
   </aside>
 
@@ -144,7 +144,7 @@
   </div>
 </div>
 
-<div id="toast" class="hidden"></div>
+<div id="toast" class="hidden" role="status" aria-live="polite" title="Click to dismiss"></div>
 
 <script src="js/core.js"></script>
 <script src="js/editor.js"></script>

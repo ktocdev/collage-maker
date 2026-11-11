@@ -41,7 +41,7 @@ playwright.config.js
 The three scripts are classic (non-module) scripts loaded in order: `core.js`, `editor.js`, `app.js`. Each is wrapped in an IIFE. They share one global object, `window.CM`:
 
 - `core.js` creates `CM` and adds: `canvas`, `copyCanvas`, `loadImage`, `clamp`, `PATTERNS`, `TEXTURES`, `tile`, `defaultFill`, `fillStyle`, `defaultFx`, `artFromImage`, `renderFx`, `alphaBounds`, `buildArt`, `cloneArt`, `artCrop`.
-- `editor.js` adds DOM helpers `CM.h`, `CM.slider`, `CM.select`, `CM.toast`, plus `CM.openEditor` and the flag `CM.editorOpen`.
+- `editor.js` adds DOM helpers `CM.h`, `CM.slider`, `CM.select`, `CM.toast(msg, { warn })` (shown about as long as it takes to read; `warn` for things the user must notice), plus `CM.openEditor` and the flag `CM.editorOpen`.
 - `app.js` exposes `CM.app` (the document, the library list and a few functions). This exists for the browser tests and for the console; nothing in the app depends on it. `CM.app.ready` is a promise that resolves once the library list has loaded (or failed), so tests wait on it rather than racing start-up. `CM.app.evalBase` and `CM.app.evalLayer` let tests check motion and easing values directly.
 
 Load order matters: `app.js` uses `CM.h` from `editor.js`, and both use `core.js`.
@@ -173,6 +173,8 @@ While the editor is open, `CM.editorOpen` is true and the main canvas keyboard s
 
 Adding to the canvas always clones the art (`CM.cloneArt`), so library items are never altered by edits to layers. Saving a piece from the editor adds an in-memory `cutout` item immediately and posts a cropped PNG to the server in the background. After a restart, that piece comes back as an ordinary transparent PNG; its original mask and unerased pixels are not stored.
 
+Uploaded or dropped pictures are added at once (from a blob URL) and copied to `library/` in the background. The server may save a picture under a new name rather than overwrite one (`photo-2`); the tile takes that name. Formats the folder doesn't keep (anything but JPG, PNG, GIF, WebP and AVIF, listed in `KEEPABLE`, which must match the server's list) are not sent, and a toast says the picture is for this session only. A failed copy shows the same kind of message. New pictures get a unique name in the app first (`-2`, `-3`…, as the server does), so session-only ones never share a name.
+
 ## Undo history (`app.js`)
 
 `commit()` pushes a snapshot of the document (size, duration, fps, loop, selection, and a deep copy of every layer made by `cloneLayer`) and truncates any redo tail. Up to 80 snapshots are kept. Art states are copied by reference, which is safe only because they are immutable.
@@ -235,8 +237,8 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, undo/redo, selection handles, the timeline, playback, motion presets and easings.
-- Not yet exercised end to end: PNG and video export, image upload, and drag-and-drop from the library.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, undo/redo, selection handles, the timeline, playback, motion presets and easings, the library inputs, the layer and properties panels, and the cut-out editor's tools.
+- Not yet exercised end to end: PNG, HTML and video export.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
 - Performance has only been tried with a handful of layers and pictures up to 1600 px. Each art layer holds its own full-size mask and output canvases, plus a source canvas shared with other copies of the same picture.

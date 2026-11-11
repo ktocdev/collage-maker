@@ -31,13 +31,23 @@ CM.select = (label, options, value, onchange) => {
   sel.value = value;
   return h('label', { class: 'row' }, label, sel);
 };
-let toastTimer;
-CM.toast = msg => {
+// A short message at the bottom of the screen. It stays up about as long as it takes to
+// read (2.6-12 s; warnings at least 6 s), stays while hovered, and hides on click.
+// { warn: true } styles it as a warning, for things the user needs to know about.
+let toastTimer, toastMs = 0;
+CM.toast = (msg, { warn = false } = {}) => {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.remove('hidden');
+  t.textContent = msg; t.classList.toggle('warn', warn); t.classList.remove('hidden');
+  toastMs = Math.min(12000, Math.max(warn ? 6000 : 2600, msg.length * 65));
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), toastMs);
 };
+{
+  const t = document.getElementById('toast');
+  t.addEventListener('mouseenter', () => clearTimeout(toastTimer));
+  t.addEventListener('mouseleave', () => { toastTimer = setTimeout(() => t.classList.add('hidden'), 2000); });
+  t.addEventListener('click', () => { clearTimeout(toastTimer); t.classList.add('hidden'); });
+}
 
 // ---------- editor state ----------
 const $ = id => document.getElementById(id);

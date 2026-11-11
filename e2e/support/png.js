@@ -54,4 +54,18 @@ const PICTURES = {
     (x < 14 || y > 45) ? [30, 30, 30, 255] : [0, 0, 0, 0]),
 };
 
-module.exports = { encodePNG, PICTURES };
+// Minimal 24-bit BMP: browsers display it, but the server's library folder does not
+// accept the format, which makes it a realistic "saved for this session only" case.
+function encodeBMP(w, h, pixel) {
+  const row = Math.ceil(w * 3 / 4) * 4, size = 54 + row * h, b = Buffer.alloc(size);
+  b.write('BM', 0); b.writeUInt32LE(size, 2); b.writeUInt32LE(54, 10);
+  b.writeUInt32LE(40, 14); b.writeInt32LE(w, 18); b.writeInt32LE(h, 22);
+  b.writeUInt16LE(1, 26); b.writeUInt16LE(24, 28); b.writeUInt32LE(row * h, 34);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const [r, g, bl] = pixel(x, y), o = 54 + (h - 1 - y) * row + x * 3;
+    b[o] = bl; b[o + 1] = g; b[o + 2] = r;
+  }
+  return b;
+}
+
+module.exports = { encodePNG, encodeBMP, PICTURES };
