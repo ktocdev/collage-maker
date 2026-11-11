@@ -175,7 +175,7 @@ Call `commit()` once after each completed user action: on pointer-up, or on an i
 
 ## Server (`server.js`)
 
-Listens on `127.0.0.1` only. Serves `/library/…` and `/exports/…` from the data folder (`COLLAGE_DATA_DIR`, default the project folder) and everything else from the project folder, refusing paths that resolve outside them. POST requests are rejected if they carry an `Origin` header that does not match the `Host` or cannot be parsed (such as `null`).
+Listens on `127.0.0.1` only. Static files come from an allowlist: `index.html`, `style.css` and `js/*.js` from the project folder, images under `/library/…` and `.html`/`.css`/`.png` under `/exports/…` from the data folder (`COLLAGE_DATA_DIR`, default the project folder). Everything else, including `server.js`, docs, tests and `.git/`, answers 404. **A new static asset must be added to `APP_FILES` or `APP_SCRIPT`.** Paths that resolve outside their folder are refused. POST requests are rejected if they carry an `Origin` header that does not match the `Host` or cannot be parsed (such as `null`).
 
 `server.js` exports `createServer({ dataDir })` for tests, and only listens when run directly. Malformed export payloads get `400`. Uploads are written with the `wx` flag, so a name collision fails rather than overwriting.
 

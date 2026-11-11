@@ -8,6 +8,10 @@ const path = require('path');
 
 const ROOT = __dirname;
 const IMG = /\.(jpe?g|png|gif|webp|avif)$/i;
+// The static files the browser may fetch. Anything not listed here is never served.
+const APP_FILES = new Set(['/index.html', '/style.css']);
+const APP_SCRIPT = /^\/js\/[\w-]+\.js$/;
+const EXPORT_FILE = /\.(html|css|png)$/i;   // what /api/export can write
 const LIBRARY_LIMIT = 40 * 1024 * 1024;
 const EXPORT_LIMIT = 300 * 1024 * 1024;
 const TYPES = {
@@ -125,11 +129,17 @@ function createServer({ dataDir = process.env.COLLAGE_DATA_DIR || ROOT } = {}) {
     let rel;
     try { rel = decodeURIComponent(url.pathname); } catch { return send(res, 400, 'bad path'); }
     if (rel === '/') rel = '/index.html';
-    // library/ and exports/ come from the data folder; everything else from the app folder.
+    // Only the app's own files and the data folders are public; everything else
+    // (server code, docs, tests, .git, package.json) answers 404.
     const top = rel.split(/[\\/]/)[1];
-    const file = (top === 'library' || top === 'exports')
-      ? inside(path.join(DATA, top), rel.slice(top.length + 1))
-      : inside(ROOT, rel);
+    let file;
+    if (top === 'library' || top === 'exports') {
+      if (!(top === 'library' ? IMG : EXPORT_FILE).test(rel)) return send(res, 404, 'not found');
+      file = inside(path.join(DATA, top), rel.slice(top.length + 1));
+    } else {
+      if (!APP_FILES.has(rel) && !APP_SCRIPT.test(rel)) return send(res, 404, 'not found');
+      file = inside(ROOT, rel);
+    }
     if (!file) return send(res, 403, 'forbidden');
     fs.readFile(file, (err, data) => {
       if (err) return send(res, 404, 'not found');

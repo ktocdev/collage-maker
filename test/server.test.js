@@ -129,6 +129,44 @@ test('rejects path traversal out of the app and data folders', async () => {
   } finally { fs.rmSync(secret); }
 });
 
+// F2: only the app's own files and the data folders are public.
+test('serves every file the page needs', async () => {
+  for (const p of ['/', '/index.html', '/style.css', '/js/core.js', '/js/editor.js', '/js/app.js']) {
+    assert.equal((await fetch(base + p)).status, 200, p);
+  }
+});
+
+test('never serves server code, docs, tests, config or git data', async () => {
+  const hidden = [
+    '/server.js', '/package.json', '/start.bat', '/.gitignore', '/.git/config', '/.git/HEAD',
+    '/README.md', '/ARCHITECTURE.md', '/HANDOFF-testing.md', '/Testing-Build-Log.md',
+    '/test/server.test.js', '/js/', '/js/../server.js', '/js/sub/x.js', '/JS/app.js',
+    '/%2e%2e/%2e%2e/server.js', '/.env', '/node_modules/x/index.js',
+  ];
+  for (const p of hidden) {
+    const res = await raw('GET', p);
+    assert.equal(res.status, 404, p);
+    assert.ok(!/require\(|"scripts"|\[core\]|ref: refs/.test(res.body.toString()), `${p} leaked content`);
+  }
+});
+
+test('library/ serves images only, exports/ serves html, css and png only', async () => {
+  fs.writeFileSync(path.join(data, 'library', 'notes.txt'), 'private');
+  fs.writeFileSync(path.join(data, 'library', 'pic.gif'), 'gif');
+  fs.mkdirSync(path.join(data, 'exports', 'kinds', 'images'), { recursive: true });
+  for (const n of ['index.html', 'style.css', 'images/a.png', 'notes.txt', 'run.js']) {
+    fs.writeFileSync(path.join(data, 'exports', 'kinds', n), 'x');
+  }
+  assert.equal((await fetch(base + '/library/pic.gif')).status, 200);
+  assert.equal((await fetch(base + '/library/notes.txt')).status, 404);
+  for (const n of ['index.html', 'style.css', 'images/a.png']) {
+    assert.equal((await fetch(`${base}/exports/kinds/${n}`)).status, 200, n);
+  }
+  for (const n of ['notes.txt', 'run.js']) {
+    assert.equal((await fetch(`${base}/exports/kinds/${n}`)).status, 404, n);
+  }
+});
+
 test('returns 400 for a malformed percent-encoding', async () => {
   assert.equal((await raw('GET', '/%E0%A4%A')).status, 400);
 });
