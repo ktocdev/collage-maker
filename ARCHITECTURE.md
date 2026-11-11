@@ -42,7 +42,7 @@ The three scripts are classic (non-module) scripts loaded in order: `core.js`, `
 
 - `core.js` creates `CM` and adds: `canvas`, `copyCanvas`, `loadImage`, `clamp`, `PATTERNS`, `TEXTURES`, `tile`, `defaultFill`, `fillStyle`, `defaultFx`, `artFromImage`, `renderFx`, `alphaBounds`, `buildArt`, `cloneArt`, `artCrop`.
 - `editor.js` adds DOM helpers `CM.h`, `CM.slider`, `CM.select`, `CM.toast`, plus `CM.openEditor` and the flag `CM.editorOpen`.
-- `app.js` exposes `CM.app` (the document, the library list and a few functions). This exists for the browser tests and for the console; nothing in the app depends on it. `CM.app.ready` is a promise that resolves once the library list has loaded (or failed), so tests wait on it rather than racing start-up.
+- `app.js` exposes `CM.app` (the document, the library list and a few functions). This exists for the browser tests and for the console; nothing in the app depends on it. `CM.app.ready` is a promise that resolves once the library list has loaded (or failed), so tests wait on it rather than racing start-up. `CM.app.evalBase` and `CM.app.evalLayer` let tests check motion and easing values directly.
 
 Load order matters: `app.js` uses `CM.h` from `editor.js`, and both use `core.js`.
 
@@ -121,14 +121,15 @@ Animatable properties are `x, y, sx, sy, rot, opacity`. A keyframe is `{ t, x, y
 
 Two evaluation functions matter:
 
-- `evalBase(layer, t)`: the transform from keyframes only. With no keyframes it returns the layer's own values. Otherwise it interpolates between the surrounding keyframes using the layer's `ease`, and holds the first/last value outside the keyframed range.
+- `evalBase(layer, t)`: the transform from keyframes only. With no keyframes it returns the layer's own values. Otherwise it interpolates between the surrounding keyframes using the layer's `ease`, and holds the first/last value outside the keyframed range. At exactly a keyframe's time it returns that keyframe's values, whatever the easing (so "Jump" shows a keyframe's own pose while the playhead is on it).
 - `evalLayer(layer, t)`: `evalBase` plus the looping motion preset (`wobble`, `bob`, `sway`, `hop`, `chomp`, `pulse`, `shake`, `spin`) applied as an offset. This is what gets drawn.
 
 Rules that follow from this:
 
 - **Editing writes to keyframes automatically.** All transform and opacity edits go through `write(layer, values)`. If the layer has no keyframes, the values go on the layer. If it has any, they go on the keyframe at the playhead, creating one if needed.
 - **Edit from `evalBase`, draw with `evalLayer`.** Drags start from `evalBase` so the motion offset is never baked into stored values.
-- When the last keyframe is removed, its values are copied back onto the layer.
+- When the last keyframe is removed, its values are copied back onto the layer. Shortening the duration drops keyframes past the new end; a layer that loses all of them gets its pose at the new end copied back the same way.
+- The rotate handle adds up the angle between pointer events rather than measuring from the start, so a drag past 180° stores the full turn (e.g. 270°, not −90°). This matters for keyframes, which interpolate the stored number.
 
 Time is snapped to the frame grid (`snapT`) whenever the user sets it. During playback, `time` advances in real time and the drawn time is floored to the frame, which is what produces the choppy look at low frame rates.
 
@@ -234,7 +235,7 @@ Element ids are slugs of layer names, made unique. Gradient geometry is computed
 
 ## Known gaps
 
-- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, and undo/redo.
+- Test coverage is being built up; see [Testing-Build-Log.md](Testing-Build-Log.md). `npm test` runs the server tests and the browser tests. Browser coverage so far: start-up, project Save/Open, re-editing art on the canvas, undo/redo, selection handles, the timeline, playback, motion presets and easings.
 - Not yet exercised end to end: PNG and video export, image upload, and drag-and-drop from the library.
 - Colors, fills and effects cannot be animated.
 - The HTML export does not carry over any animation, and its stage is a fixed pixel size.
