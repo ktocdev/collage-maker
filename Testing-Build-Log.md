@@ -26,8 +26,8 @@ Ordered so the riskiest gaps (losing a user's work) get covered first, and so th
 | --- | --- | --- | --- | --- |
 | 1 | `CM-1` | This log. Add a `COLLAGE_DATA_DIR` env var so the server can use a temp folder. Server tests on `node:test`. Fix any server bugs found. | Step 1, #13 | Merged ([#1](https://github.com/ktocdev/collage-maker/pull/1)) |
 | 2 | `CM-2` | Playwright added to `package.json`, Playwright config, a fixture that starts the server on a temp data dir and a free port, and a smoke test (page loads, no console errors). Then the Save → reload → Open round trip. | Step 2, #1 | Merged ([#2](https://github.com/ktocdev/collage-maker/pull/2)) |
-| 3 | `CM-3` | Re-editing an art layer already on the canvas (`delta` compensation for rotated, scaled, flipped and trimmed layers, with and without keyframes). Canvas undo and redo. | #2, #3 | In review ([#3](https://github.com/ktocdev/collage-maker/pull/3)) |
-| 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | Not started |
+| 3 | `CM-3` | Re-editing an art layer already on the canvas (`delta` compensation for rotated, scaled, flipped and trimmed layers, with and without keyframes). Canvas undo and redo. | #2, #3 | Merged ([#3](https://github.com/ktocdev/collage-maker/pull/3)) |
+| 4 | `CM-4` | Selection handles (resize, Shift-stretch, rotate, Shift-snap, on flipped and rotated layers). Timeline: scrub, retime, drop-on-key, double-click delete, duration and fps changes. Playback, motion presets and easing values. | #6, #7, #8 | In progress |
 | 5 | `CM-5` | Library input paths (upload, drop files, drag to canvas, double-click). Layer panel. Properties panel. The rest of the editor. | #9, #10, #11, #12 | Not started |
 | 6 | `CM-6` | PNG export, HTML export (screenshot compared with a tolerance), video export (non-empty WebM at most). Reference images for every pattern, texture and effect. | #4, #5, #14, Step 4 | Not started |
 | 7 | `CM-7` | Move the pure maths out of the `app.js` IIFE (`evalBase`, `evalLayer`, easings, `shapeD`, `toDoc`/`unrot`, `snapT`, `cloneLayer`) and unit-test it in Node. | Step 3 | Not started |
@@ -94,6 +94,18 @@ Every PR also:
 - [x] Bugs: B7 fixed; B6 logged, not fixed (your decision, 2026-11-10)
 - [x] Suite passes 3 runs in a row: 35 server + 51 browser tests (4 of them expected failures), about 17 s for the browser part
 - [x] PR opened: [#3](https://github.com/ktocdev/collage-maker/pull/3)
+- [x] Manual check by you in the real app: rotate a picture, cut part away in the editor, Apply, Undo. **Worked as expected** (no jump, undo restored it)
+- [x] Merged into `main` on 2026-11-10 (merge commit `aca7f83`)
+
+### CM-4: selection handles, timeline, playback
+
+- [x] Branch created from `main` after CM-3 merged
+- [ ] Selection handles: uniform resize, Shift-stretch, rotate, Shift-snap to 15°, on plain, flipped and rotated layers (#6)
+- [ ] Timeline: scrub, drag a keyframe to retime it, drop one keyframe on another, double-click to delete, duration and fps changes (#7)
+- [ ] Playback: Play/Pause/Rewind, Space, looping on and off, frame snapping (#8)
+- [ ] Motion presets and easings checked against expected values (#8)
+- [ ] Bugs found are fixed or logged
+- [ ] PR opened
 
 ## Bugs
 
